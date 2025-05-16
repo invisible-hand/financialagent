@@ -89,7 +89,7 @@ ${contextData.transactions.map((tx: any) =>
       // Call OpenAI API with timeout
       const completion = await Promise.race([
         openai.chat.completions.create({
-          model: 'gpt-4.1-nano',
+          model: 'gpt-4.1-mini',
           messages: formattedMessages
         }),
         new Promise((_, reject) => 

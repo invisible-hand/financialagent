@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Financial Insights API</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    pre {
+      background: #f1f1f1;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 300px;
+    }
+    button {
+      background: #166534;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0.5rem 0;
+    }
+    button:hover {
+      background: #14532d;
+    }
+    .section {
+      margin-bottom: 2rem;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Insights API Test</h1>
+  
+  <div class="section">
+    <h2>Batch API Test</h2>
+    <button id="testBatch">Test Batch API</button>
+    <div id="batchResult">Results will appear here...</div>
+  </div>
+  
+  <div class="section">
+    <h2>Individual Insight Tests</h2>
+    <button data-type="snapshot">Test 1-Minute Snapshot</button>
+    <button data-type="detective">Test Spending Detective</button>
+    <button data-type="fastfood">Test Fast Food Analysis</button>
+    <button data-type="subscriptions">Test Subscription Radar</button>
+    <div id="singleResult">Results will appear here...</div>
+  </div>
+  
+  <script>
+    document.getElementById('testBatch').addEventListener('click', async () => {
+      document.getElementById('batchResult').innerHTML = 'Loading...';
+      
+      try {
+        const response = await fetch('/api/financial-insights/batch', {
+          method: 'GET',
+        });
+        
+        const data = await response.json();
+        
+        // Display the results
+        document.getElementById('batchResult').innerHTML = `
+          <h3>API Response:</h3>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+          
+          <h3>Available Insights:</h3>
+          <ul>
+            ${data.insights ? Object.keys(data.insights).map(key => 
+              `<li>${key}: ${data.insights[key] ? '✅ Available' : '❌ Missing'}</li>`
+            ).join('') : 'No insights available'}
+          </ul>
+        `;
+      } catch (error) {
+        document.getElementById('batchResult').innerHTML = `
+          <h3>Error:</h3>
+          <pre>${error.message}</pre>
+        `;
+      }
+    });
+    
+    // Add event listeners for individual insight tests
+    document.querySelectorAll('button[data-type]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const insightType = button.getAttribute('data-type');
+        document.getElementById('singleResult').innerHTML = `Loading ${insightType}...`;
+        
+        try {
+          // Create dummy data for testing
+          const dummyData = {
+            contextData: {
+              userType: "family",
+              insightType: insightType,
+              accountData: {
+                id: "acc-test",
+                name: "Test Account",
+                type: "Checking",
+                balance: 10000,
+                currency: "USD"
+              },
+              transactions: []
+            }
+          };
+          
+          // Make the request to the API
+          const response = await fetch('/api/financial-insights', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dummyData)
+          });
+          
+          const data = await response.json();
+          
+          // Display the results
+          document.getElementById('singleResult').innerHTML = `
+            <h3>${insightType} Response:</h3>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+            
+            <h3>Content:</h3>
+            <div>${data.response || 'No content'}</div>
+          `;
+        } catch (error) {
+          document.getElementById('singleResult').innerHTML = `
+            <h3>Error:</h3>
+            <pre>${error.message}</pre>
+          `;
+        }
+      });
+    });
+  </script>
+</body>
+</html> 

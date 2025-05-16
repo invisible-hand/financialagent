@@ -235,13 +235,15 @@ export function FinancialInsights() {
 
   const toggleInsights = () => {
     if (isOpen) {
-      setIsOpen(false);
-      // Reset expanded state when closing
-      setTimeout(() => {
+      // Close immediately
+      setResponse("");
+      setErrorMessage(null);
+      // Only reset expanded state when closing and it's expanded
+      if (isExpanded) {
         setIsExpanded(false);
-        setResponse("");
-        setErrorMessage(null);
-      }, 300); // Wait for close animation to finish
+      }
+      // Set isOpen to false last to ensure immediate render of the button
+      setIsOpen(false);
     } else {
       setIsOpen(true);
     }
@@ -252,8 +254,20 @@ export function FinancialInsights() {
   };
 
   const handleAnalysisRequest = async (insightType: string) => {
+    console.log(`Requesting insight of type: ${insightType}`);
+    
     // Check if we have pre-computed insights for this type
     if (preComputedInsights[insightType]) {
+      console.log(`Found pre-computed insight for ${insightType}:`, 
+        preComputedInsights[insightType].substring(0, 50) + "...");
+      
+      // Debug: log the first few words of each insight to verify they are different
+      Object.entries(preComputedInsights).forEach(([key, value]) => {
+        if (value && value.length > 0) {
+          console.log(`DEBUG - Insight ${key}: "${value.substring(0, 30)}..."`);
+        }
+      });
+      
       setResponse("");
       setErrorMessage(null);
       setIsLoading(true);
@@ -268,6 +282,7 @@ export function FinancialInsights() {
       return;
     }
     
+    console.log(`No pre-computed insight found for ${insightType}, generating...`);
     setResponse("");
     setErrorMessage(null);
     setIsLoading(true);
@@ -279,9 +294,10 @@ export function FinancialInsights() {
         accountData: userData.accountData,
         transactions: userData.transactions,
         insightType: insightType,
-        format: "markdown"
+        userType: "family"  // Add explicit user type
       };
 
+      console.log(`Calling API for insight type: ${insightType}`);
       // Call API without timeout
       const response = await fetch("/api/financial-insights", {
         method: "POST",
@@ -298,6 +314,7 @@ export function FinancialInsights() {
       }
 
       const data = await response.json();
+      console.log(`Got response for ${insightType}, source: ${data.source}`);
       setResponse(data.response);
       
       // Store in pre-computed insights
@@ -306,7 +323,7 @@ export function FinancialInsights() {
         [insightType]: data.response
       }));
     } catch (error) {
-      console.error("Error getting insights:", error);
+      console.error(`Error getting insights for ${insightType}:`, error);
       setErrorMessage(
         "Sorry, we couldn't generate insights right now. Please try again later."
       );
@@ -316,126 +333,128 @@ export function FinancialInsights() {
   };
 
   return (
-    <div className={`fixed ${isExpanded ? 'inset-0 bg-black/20 z-50' : 'bottom-4 right-24 z-50'}`} onClick={isExpanded ? toggleExpand : undefined}>
-      {isOpen && (
-        <Card 
-          className={`
-            ${isExpanded ? 'w-[90%] h-[85%] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-100' : 'w-96 md:w-120 h-120 mb-4'} 
-            flex flex-col shadow-lg overflow-hidden transition-all duration-300 ease-in-out
-            ${isLoading && isExpanded ? 'insights-pulse' : ''}
-          `}
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="bg-emerald-600 text-white p-3 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <BarChart size={20} />
-              <span className="font-medium">Financial Insights</span>
+    <>
+      {isOpen ? (
+        <div className={`fixed ${isExpanded ? 'inset-0 bg-black/20 z-50' : 'bottom-4 right-24 z-50'}`} onClick={isExpanded ? toggleExpand : undefined}>
+          <Card 
+            className={`
+              ${isExpanded ? 'w-[90%] h-[85%] fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 scale-100' : 'w-96 md:w-120 h-120 mb-4'} 
+              flex flex-col shadow-lg overflow-hidden transition-all duration-300 ease-in-out
+              ${isLoading && isExpanded ? 'insights-pulse' : ''}
+            `}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="bg-emerald-600 text-white p-3 flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                <BarChart size={20} />
+                <span className="font-medium">Financial Insights</span>
+              </div>
+              <div className="flex space-x-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleExpand}
+                  className="h-8 w-8 text-white hover:bg-emerald-700 rounded-full"
+                >
+                  {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleInsights}
+                  className="h-8 w-8 text-white hover:bg-emerald-700 rounded-full"
+                >
+                  <X size={18} />
+                </Button>
+              </div>
             </div>
-            <div className="flex space-x-1">
+            
+            <div className={`p-3 ${isExpanded ? 'flex flex-wrap justify-center gap-2' : 'space-y-2'} ${isExpanded ? '' : 'border-b'}`}>
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleExpand}
-                className="h-8 w-8 text-white hover:bg-emerald-700 rounded-full"
+                onClick={() => handleAnalysisRequest("snapshot")}
+                className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
+                disabled={isLoading || isPreComputing}
               >
-                {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                <Timer size={16} />
+                1-Minute Snapshot
               </Button>
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleInsights}
-                className="h-8 w-8 text-white hover:bg-emerald-700 rounded-full"
+                onClick={() => handleAnalysisRequest("detective")}
+                className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
+                disabled={isLoading || isPreComputing}
               >
-                <X size={18} />
+                <Search size={16} />
+                Spending Detective
+              </Button>
+              <Button
+                onClick={() => handleAnalysisRequest("fastfood")}
+                className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
+                disabled={isLoading || isPreComputing}
+              >
+                <Utensils size={16} />
+                Fast Food Spending
+              </Button>
+              <Button
+                onClick={() => handleAnalysisRequest("subscriptions")}
+                className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
+                disabled={isLoading || isPreComputing}
+              >
+                <Wifi size={16} />
+                Subscription Radar
               </Button>
             </div>
-          </div>
-          
-          <div className={`p-3 ${isExpanded ? 'flex flex-wrap justify-center gap-2' : 'space-y-2'} ${isExpanded ? '' : 'border-b'}`}>
-            <Button
-              onClick={() => handleAnalysisRequest("snapshot")}
-              className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
-              disabled={isLoading || isPreComputing}
-            >
-              <Timer size={16} />
-              1-Minute Snapshot
-            </Button>
-            <Button
-              onClick={() => handleAnalysisRequest("detective")}
-              className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
-              disabled={isLoading || isPreComputing}
-            >
-              <Search size={16} />
-              Spending Detective
-            </Button>
-            <Button
-              onClick={() => handleAnalysisRequest("fastfood")}
-              className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
-              disabled={isLoading || isPreComputing}
-            >
-              <Utensils size={16} />
-              Fast Food Spending
-            </Button>
-            <Button
-              onClick={() => handleAnalysisRequest("subscriptions")}
-              className={`${isExpanded ? 'w-auto' : 'w-full'} bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1`}
-              disabled={isLoading || isPreComputing}
-            >
-              <Wifi size={16} />
-              Subscription Radar
-            </Button>
-          </div>
-          
-          <ScrollArea className={`flex-grow p-4 ${isExpanded ? 'overflow-y-auto' : ''}`}>
-            {isLoading || isPreComputing ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-2" />
-                <span className="text-sm text-gray-500">
-                  {isPreComputing 
-                    ? "Pre-computing insights... This may take a minute or two."
-                    : "Analyzing your transactions..."}
-                </span>
-              </div>
-            ) : errorMessage ? (
-              <div className="flex flex-col items-center justify-center h-full text-center fade-in">
-                <div className="text-red-500 mb-2 text-xl">⚠️</div>
-                <p className="text-gray-700">{errorMessage}</p>
-              </div>
-            ) : (
-              response && (
-                <div className={`text-gray-800 ${isExpanded ? 'max-w-6xl mx-auto p-6' : ''} prose prose-sm md:prose-base lg:prose-lg prose-headings:mb-4 prose-headings:mt-6 prose-h3:text-emerald-700 prose-h2:text-emerald-800 prose-h2:border-b prose-h2:pb-2 prose-h2:border-emerald-100 prose-p:my-4 prose-ul:my-4 prose-li:my-1 prose-table:overflow-x-auto prose-table:my-4 prose-td:p-2 prose-th:p-2 prose-th:bg-emerald-50 prose-strong:text-emerald-700 prose-table:border-collapse prose-td:border prose-th:border prose-td:border-gray-200 prose-th:border-gray-200 prose-table:w-full prose-table:table-auto prose-blockquote:border-l-4 prose-blockquote:border-emerald-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:bg-emerald-50 prose-blockquote:py-1 prose-blockquote:rounded-r fade-in`}>
-                  <ReactMarkdown 
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      // Add custom styling for specific markdown elements
-                      h2: ({...props}) => <h2 className="text-2xl font-bold text-emerald-800 mt-8 mb-4 pb-2 border-b border-emerald-100" {...props} />,
-                      h3: ({...props}) => <h3 className="text-xl font-bold text-emerald-700 mt-6 mb-3" {...props} />,
-                      table: ({...props}) => <div className="overflow-x-auto my-4"><table className="w-full border-collapse" {...props} /></div>,
-                      th: ({...props}) => <th className="border border-gray-200 bg-emerald-50 p-2 text-left" {...props} />,
-                      td: ({...props}) => <td className="border border-gray-200 p-2" {...props} />,
-                      blockquote: ({...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 py-1 my-4 bg-emerald-50 rounded-r italic text-gray-700" {...props} />,
-                      strong: ({...props}) => <strong className="font-bold text-emerald-700" {...props} />,
-                      li: ({...props}) => <li className="my-1" {...props} />,
-                    }}
-                  >
-                    {response}
-                  </ReactMarkdown>
+            
+            <ScrollArea className={`flex-grow p-4 ${isExpanded ? 'overflow-y-auto' : ''}`}>
+              {isLoading || isPreComputing ? (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-2" />
+                  <span className="text-sm text-gray-500">
+                    {isPreComputing 
+                      ? "Pre-computing insights... This may take a minute or two."
+                      : "Analyzing your transactions..."}
+                  </span>
                 </div>
-              )
-            )}
-            <div ref={responseDivRef} />
-          </ScrollArea>
-        </Card>
+              ) : errorMessage ? (
+                <div className="flex flex-col items-center justify-center h-full text-center fade-in">
+                  <div className="text-red-500 mb-2 text-xl">⚠️</div>
+                  <p className="text-gray-700">{errorMessage}</p>
+                </div>
+              ) : (
+                response && (
+                  <div className={`text-gray-800 ${isExpanded ? 'max-w-6xl mx-auto p-6' : ''} prose prose-sm md:prose-base lg:prose-lg prose-headings:mb-4 prose-headings:mt-6 prose-h3:text-emerald-700 prose-h2:text-emerald-800 prose-h2:border-b prose-h2:pb-2 prose-h2:border-emerald-100 prose-p:my-4 prose-ul:my-4 prose-li:my-1 prose-table:overflow-x-auto prose-table:my-4 prose-td:p-2 prose-th:p-2 prose-th:bg-emerald-50 prose-strong:text-emerald-700 prose-table:border-collapse prose-td:border prose-th:border prose-td:border-gray-200 prose-th:border-gray-200 prose-table:w-full prose-table:table-auto prose-blockquote:border-l-4 prose-blockquote:border-emerald-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-gray-700 prose-blockquote:bg-emerald-50 prose-blockquote:py-1 prose-blockquote:rounded-r fade-in`}>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        // Add custom styling for specific markdown elements
+                        h2: ({...props}) => <h2 className="text-2xl font-bold text-emerald-800 mt-8 mb-4 pb-2 border-b border-emerald-100" {...props} />,
+                        h3: ({...props}) => <h3 className="text-xl font-bold text-emerald-700 mt-6 mb-3" {...props} />,
+                        table: ({...props}) => <div className="overflow-x-auto my-4"><table className="w-full border-collapse" {...props} /></div>,
+                        th: ({...props}) => <th className="border border-gray-200 bg-emerald-50 p-2 text-left" {...props} />,
+                        td: ({...props}) => <td className="border border-gray-200 p-2" {...props} />,
+                        blockquote: ({...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 py-1 my-4 bg-emerald-50 rounded-r italic text-gray-700" {...props} />,
+                        strong: ({...props}) => <strong className="font-bold text-emerald-700" {...props} />,
+                        li: ({...props}) => <li className="my-1" {...props} />,
+                      }}
+                    >
+                      {response}
+                    </ReactMarkdown>
+                  </div>
+                )
+              )}
+              <div ref={responseDivRef} />
+            </ScrollArea>
+          </Card>
+        </div>
+      ) : (
+        <div className="fixed bottom-4 right-24 z-50">
+          <Button
+            onClick={toggleInsights}
+            className="h-16 w-16 rounded-full bg-emerald-600 hover:bg-emerald-700 shadow-lg flex items-center justify-center"
+          >
+            <BarChart size={28} />
+          </Button>
+        </div>
       )}
-
-      {!isOpen && (
-        <Button
-          onClick={toggleInsights}
-          className="h-16 w-16 rounded-full bg-emerald-600 hover:bg-emerald-700 shadow-lg flex items-center justify-center"
-        >
-          <BarChart size={28} />
-        </Button>
-      )}
-    </div>
+    </>
   );
 } 

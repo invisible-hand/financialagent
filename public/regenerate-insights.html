@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regenerate Financial Insights</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    
+    button {
+      background-color: #166534;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    
+    button:hover {
+      background-color: #14532d;
+    }
+    
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 300px;
+    }
+    
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    
+    .section {
+      margin-bottom: 30px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>Regenerate Financial Insights</h1>
+  
+  <div class="section">
+    <h2>Actions</h2>
+    <button id="clearDB">1. Clear Database</button>
+    <button id="regenerate">2. Regenerate All Insights</button>
+    <button id="verify">3. Verify Insights</button>
+  </div>
+  
+  <div class="section">
+    <h2>Status</h2>
+    <div id="status">Ready to begin</div>
+  </div>
+  
+  <div class="section">
+    <h2>Log</h2>
+    <div id="log"></div>
+  </div>
+  
+  <div class="section">
+    <h2>Results</h2>
+    <pre id="results">Run the process to see results</pre>
+  </div>
+  
+  <script>
+    // DOM elements
+    const statusEl = document.getElementById('status');
+    const logEl = document.getElementById('log');
+    const resultsEl = document.getElementById('results');
+    
+    // Add event listeners
+    document.getElementById('clearDB').addEventListener('click', clearDatabase);
+    document.getElementById('regenerate').addEventListener('click', regenerateInsights);
+    document.getElementById('verify').addEventListener('click', verifyInsights);
+    
+    // Add log entry
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    // Update status
+    function updateStatus(message, type = 'info') {
+      statusEl.className = type;
+      statusEl.textContent = message;
+    }
+    
+    // Clear database
+    async function clearDatabase() {
+      try {
+        updateStatus('Clearing database...', 'info');
+        log('Clearing insights database...');
+        
+        const response = await fetch('/api/financial-insights/clear', {
+          method: 'POST'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          updateStatus('Database cleared successfully', 'success');
+          log('Database cleared successfully', 'success');
+        } else {
+          const error = await response.text();
+          updateStatus('Failed to clear database', 'error');
+          log(`Failed to clear database: ${error}`, 'error');
+        }
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`, 'error');
+        log(`Error clearing database: ${error.message}`, 'error');
+      }
+    }
+    
+    // Regenerate insights
+    async function regenerateInsights() {
+      try {
+        updateStatus('Regenerating insights...', 'info');
+        log('Starting insights regeneration process...');
+        
+        // Create mock data
+        const contextData = {
+          userType: "family",
+          accountData: {
+            id: "test-account",
+            name: "Test Account",
+            type: "Checking",
+            balance: 5000,
+            currency: "USD"
+          },
+          transactions: [] // Empty array - the API will load from CSV
+        };
+        
+        log('Calling batch API endpoint...');
+        const response = await fetch('/api/financial-insights/batch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ contextData })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          updateStatus('Insights regenerated successfully', 'success');
+          log('Insights regenerated successfully', 'success');
+          resultsEl.textContent = JSON.stringify(data, null, 2);
+          
+          // Check if all insight types are present
+          const insightTypes = ['snapshot', 'detective', 'fastfood', 'subscriptions'];
+          const missingTypes = insightTypes.filter(type => 
+            !data.insights || !data.insights[type] || data.insights[type].trim() === ''
+          );
+          
+          if (missingTypes.length > 0) {
+            log(`Warning: Missing insights: ${missingTypes.join(', ')}`, 'error');
+          } else {
+            log('All insight types generated successfully', 'success');
+          }
+        } else {
+          const error = await response.text();
+          updateStatus('Failed to regenerate insights', 'error');
+          log(`Failed to regenerate insights: ${error}`, 'error');
+        }
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`, 'error');
+        log(`Error regenerating insights: ${error.message}`, 'error');
+      }
+    }
+    
+    // Verify insights
+    async function verifyInsights() {
+      try {
+        updateStatus('Verifying insights...', 'info');
+        log('Fetching current insights from database...');
+        
+        const response = await fetch('/api/financial-insights/batch');
+        
+        if (response.ok) {
+          const data = await response.json();
+          resultsEl.textContent = JSON.stringify(data, null, 2);
+          
+          if (!data.insights) {
+            updateStatus('No insights found in database', 'error');
+            log('No insights found in database', 'error');
+            return;
+          }
+          
+          // Check if all insight types are present
+          const insightTypes = ['snapshot', 'detective', 'fastfood', 'subscriptions'];
+          const missingTypes = insightTypes.filter(type => 
+            !data.insights[type] || data.insights[type].trim() === ''
+          );
+          
+          if (missingTypes.length > 0) {
+            updateStatus(`Missing insights: ${missingTypes.join(', ')}`, 'error');
+            log(`Missing insights: ${missingTypes.join(', ')}`, 'error');
+          } else {
+            updateStatus('All insights verified successfully', 'success');
+            log('All insights verified successfully', 'success');
+          }
+          
+          // Create table of insight previews
+          let previewHtml = '<table style="width:100%; border-collapse: collapse; margin-top: 20px;">';
+          previewHtml += '<tr><th style="text-align:left; padding:8px; border:1px solid #ddd; background:#f5f5f5;">Type</th><th style="text-align:left; padding:8px; border:1px solid #ddd; background:#f5f5f5;">Preview (first 100 chars)</th></tr>';
+          
+          for (const type of insightTypes) {
+            const content = data.insights[type] || '';
+            const preview = content ? content.substring(0, 100) + '...' : 'MISSING';
+            const rowStyle = content ? '' : 'background:#ffe6e6;';
+            
+            previewHtml += `<tr style="${rowStyle}">`;
+            previewHtml += `<td style="padding:8px; border:1px solid #ddd;">${type}</td>`;
+            previewHtml += `<td style="padding:8px; border:1px solid #ddd;">${preview}</td>`;
+            previewHtml += '</tr>';
+          }
+          
+          previewHtml += '</table>';
+          
+          // Add preview table to log
+          const previewDiv = document.createElement('div');
+          previewDiv.innerHTML = previewHtml;
+          logEl.appendChild(previewDiv);
+          
+        } else {
+          const error = await response.text();
+          updateStatus('Failed to verify insights', 'error');
+          log(`Failed to verify insights: ${error}`, 'error');
+        }
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`, 'error');
+        log(`Error verifying insights: ${error.message}`, 'error');
+      }
+    }
+    
+    // Initial log entry
+    log('Page loaded. Ready to begin the process.');
+    log('Step 1: Clear the database to start fresh');
+    log('Step 2: Regenerate all insights');
+    log('Step 3: Verify that all insight types were created');
+  </script>
+</body>
+</html> 

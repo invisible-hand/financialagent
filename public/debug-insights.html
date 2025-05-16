@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Financial Insights</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      gap: 20px;
+    }
+    .box {
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+    h3 {
+      margin-top: 0;
+      color: #166534;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 300px;
+    }
+    button {
+      background: #166534;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #125429;
+    }
+    .actions {
+      margin: 20px 0;
+    }
+    .content {
+      margin-top: 10px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Insights Debug</h1>
+  
+  <div class="actions">
+    <button id="clearDB">Clear Insights Database</button>
+    <button id="loadBatch">Load Batch Insights</button>
+  </div>
+  
+  <div class="grid">
+    <div class="box">
+      <h3>Raw API Response</h3>
+      <pre id="apiResponse">Loading...</pre>
+    </div>
+    
+    <div class="box">
+      <h3>Insight Buttons Test</h3>
+      <div>
+        <button class="insight-btn" data-key="snapshot">1-Minute Snapshot</button>
+        <button class="insight-btn" data-key="detective">Spending Detective</button>
+        <button class="insight-btn" data-key="fastfood">Fast Food Spending</button>
+        <button class="insight-btn" data-key="subscriptions">Subscription Radar</button>
+      </div>
+      <div class="content" id="insightContent">Click a button to see content</div>
+    </div>
+    
+    <div class="box">
+      <h3>Mapped Results</h3>
+      <div id="mappedResults">Not loaded yet</div>
+    </div>
+    
+    <div class="box">
+      <h3>Database Structure</h3>
+      <pre id="dbStructure">Not loaded yet</pre>
+    </div>
+  </div>
+  
+  <script>
+    // Load API response on page load
+    window.addEventListener('DOMContentLoaded', fetchBatchInsights);
+    
+    // Add event listeners
+    document.getElementById('clearDB').addEventListener('click', clearDatabase);
+    document.getElementById('loadBatch').addEventListener('click', fetchBatchInsights);
+    
+    // Add event listeners to insight buttons
+    document.querySelectorAll('.insight-btn').forEach(btn => {
+      btn.addEventListener('click', () => showInsight(btn.dataset.key));
+    });
+    
+    // Global variable to store insights
+    let insightsData = null;
+    
+    // Fetch batch insights
+    async function fetchBatchInsights() {
+      try {
+        document.getElementById('apiResponse').textContent = 'Loading...';
+        
+        const response = await fetch('/api/financial-insights/batch');
+        const data = await response.json();
+        
+        // Store for later use
+        insightsData = data;
+        
+        // Show raw response
+        document.getElementById('apiResponse').textContent = JSON.stringify(data, null, 2);
+        
+        // Update mapped results
+        const mappedResults = document.getElementById('mappedResults');
+        mappedResults.innerHTML = '';
+        
+        if (data.insights) {
+          const insightTypes = ['snapshot', 'detective', 'fastfood', 'subscriptions'];
+          
+          // Create a table of available insights
+          const table = document.createElement('table');
+          table.style.width = '100%';
+          table.style.borderCollapse = 'collapse';
+          
+          // Create header row
+          const headerRow = document.createElement('tr');
+          headerRow.innerHTML = `
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background: #f2f2f2;">Type</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background: #f2f2f2;">Available</th>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background: #f2f2f2;">Preview</th>
+          `;
+          table.appendChild(headerRow);
+          
+          // Add rows for each insight type
+          insightTypes.forEach(type => {
+            const row = document.createElement('tr');
+            const hasContent = data.insights[type] && data.insights[type].length > 0;
+            
+            row.innerHTML = `
+              <td style="border: 1px solid #ddd; padding: 8px;">${type}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${hasContent ? '✅' : '❌'}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${hasContent ? data.insights[type].substring(0, 50) + '...' : 'Not available'}</td>
+            `;
+            
+            table.appendChild(row);
+          });
+          
+          mappedResults.appendChild(table);
+        } else {
+          mappedResults.textContent = 'No insights available';
+        }
+        
+        // Update database structure
+        fetchDatabaseStructure();
+        
+      } catch (error) {
+        document.getElementById('apiResponse').textContent = `Error: ${error.message}`;
+      }
+    }
+    
+    // Show specific insight content
+    function showInsight(key) {
+      const contentDiv = document.getElementById('insightContent');
+      
+      if (!insightsData || !insightsData.insights) {
+        contentDiv.innerHTML = '<p style="color: red;">No insights data available. Please load batch insights first.</p>';
+        return;
+      }
+      
+      const content = insightsData.insights[key];
+      
+      if (!content) {
+        contentDiv.innerHTML = `<p style="color: red;">No content available for "${key}" insight</p>`;
+        return;
+      }
+      
+      contentDiv.innerHTML = `
+        <h4>${key}</h4>
+        <div style="white-space: pre-wrap;">${content}</div>
+      `;
+    }
+    
+    // Clear database
+    async function clearDatabase() {
+      if (!confirm('Are you sure you want to clear the insights database?')) {
+        return;
+      }
+      
+      try {
+        document.getElementById('dbStructure').textContent = 'Clearing database...';
+        
+        // Create an empty file (we don't have a dedicated clear endpoint)
+        await fetch('/api/financial-insights/clear', {
+          method: 'POST'
+        });
+        
+        document.getElementById('dbStructure').textContent = 'Database cleared. Reloading...';
+        
+        // Reload insights after a short delay
+        setTimeout(fetchBatchInsights, 1000);
+        
+      } catch (error) {
+        document.getElementById('dbStructure').textContent = `Error clearing database: ${error.message}`;
+      }
+    }
+    
+    // Fetch database structure for debugging
+    async function fetchDatabaseStructure() {
+      try {
+        // We don't have a real endpoint for this, so just show what we know
+        if (!insightsData) {
+          document.getElementById('dbStructure').textContent = 'No data available';
+          return;
+        }
+        
+        document.getElementById('dbStructure').textContent = `
+Source: ${insightsData.source || 'unknown'}
+Complete: ${insightsData.complete || false}
+        
+Insight Types in Response:
+${Object.keys(insightsData.insights || {}).join(', ')}
+
+Raw Data Structure:
+${JSON.stringify(insightsData, null, 2)}
+        `;
+        
+      } catch (error) {
+        document.getElementById('dbStructure').textContent = `Error fetching database structure: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html> 
