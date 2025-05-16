@@ -18,7 +18,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useUserContext } from "@/lib/user-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Transaction } from "@/lib/parse-csv";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 

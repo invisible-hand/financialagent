@@ -27,46 +27,6 @@ export function FinancialInsights() {
     }
   }, [response]);
 
-  // Load pre-computed insights from the server when component mounts
-  useEffect(() => {
-    const loadPreComputedInsights = async () => {
-      try {
-        console.log(`Loading pre-computed insights...`);
-        // Add cache-busting parameter to prevent browser caching
-        const response = await fetch(`/api/financial-insights/batch?_=${new Date().getTime()}`, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          
-          if (data.insights) {
-            console.log(`Loaded pre-computed insights from ${data.source || 'server'}`, data.insights);
-            
-            // Store insights in state
-            setPreComputedInsights(data.insights);
-            
-            // Check if any insights are missing
-            const missingInsights = insightTypes.filter(type => 
-              !data.insights[type] || data.insights[type].trim() === ''
-            );
-            
-            if (missingInsights.length > 0) {
-              console.log(`Missing insights detected: ${missingInsights.join(', ')}. Requesting regeneration...`);
-              // Force regeneration of all insights
-              regenerateAllInsights();
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error loading pre-computed insights:", error);
-      }
-    };
-    
-    loadPreComputedInsights();
-  }, []);
-
   const regenerateAllInsights = async () => {
     console.log("Regenerating all insights...");
     setIsPreComputing(true);
@@ -229,6 +189,46 @@ export function FinancialInsights() {
       setIsPreComputing(false);
     }
   };
+
+  // Load pre-computed insights from the server when component mounts
+  useEffect(() => {
+    const loadPreComputedInsights = async () => {
+      try {
+        console.log(`Loading pre-computed insights...`);
+        // Add cache-busting parameter to prevent browser caching
+        const response = await fetch(`/api/financial-insights/batch?_=${new Date().getTime()}`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.insights) {
+            console.log(`Loaded pre-computed insights from ${data.source || 'server'}`, data.insights);
+            
+            // Store insights in state
+            setPreComputedInsights(data.insights);
+            
+            // Check if any insights are missing
+            const missingInsights = insightTypes.filter(type => 
+              !data.insights[type] || data.insights[type].trim() === ''
+            );
+            
+            if (missingInsights.length > 0) {
+              console.log(`Missing insights detected: ${missingInsights.join(', ')}. Requesting regeneration...`);
+              // Force regeneration of all insights
+              regenerateAllInsights();
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading pre-computed insights:", error);
+      }
+    };
+    
+    loadPreComputedInsights();
+  }, [insightTypes, regenerateAllInsights]);
 
   const toggleInsights = () => {
     if (isOpen) {
@@ -405,14 +405,14 @@ export function FinancialInsights() {
                     remarkPlugins={[remarkGfm]}
                     components={{
                       // Add custom styling for specific markdown elements
-                      h2: ({node, ...props}) => <h2 className="text-2xl font-bold text-emerald-800 mt-8 mb-4 pb-2 border-b border-emerald-100" {...props} />,
-                      h3: ({node, ...props}) => <h3 className="text-xl font-bold text-emerald-700 mt-6 mb-3" {...props} />,
-                      table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="w-full border-collapse" {...props} /></div>,
-                      th: ({node, ...props}) => <th className="border border-gray-200 bg-emerald-50 p-2 text-left" {...props} />,
-                      td: ({node, ...props}) => <td className="border border-gray-200 p-2" {...props} />,
-                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 py-1 my-4 bg-emerald-50 rounded-r italic text-gray-700" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-bold text-emerald-700" {...props} />,
-                      li: ({node, ...props}) => <li className="my-1" {...props} />,
+                      h2: ({...props}) => <h2 className="text-2xl font-bold text-emerald-800 mt-8 mb-4 pb-2 border-b border-emerald-100" {...props} />,
+                      h3: ({...props}) => <h3 className="text-xl font-bold text-emerald-700 mt-6 mb-3" {...props} />,
+                      table: ({...props}) => <div className="overflow-x-auto my-4"><table className="w-full border-collapse" {...props} /></div>,
+                      th: ({...props}) => <th className="border border-gray-200 bg-emerald-50 p-2 text-left" {...props} />,
+                      td: ({...props}) => <td className="border border-gray-200 p-2" {...props} />,
+                      blockquote: ({...props}) => <blockquote className="border-l-4 border-emerald-500 pl-4 py-1 my-4 bg-emerald-50 rounded-r italic text-gray-700" {...props} />,
+                      strong: ({...props}) => <strong className="font-bold text-emerald-700" {...props} />,
+                      li: ({...props}) => <li className="my-1" {...props} />,
                     }}
                   >
                     {response}

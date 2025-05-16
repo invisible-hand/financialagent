@@ -72,9 +72,9 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         
         // Create account data from transactions
         let balance = 0;
-        let accountName = "Family Joint Account";
-        let accountType = "Checking";
-        let accountId = "acc-fam-1234";
+        const accountName = "Family Joint Account";
+        const accountType = "Checking";
+        const accountId = "acc-fam-1234";
         
         // Calculate balance from transactions
         transactions.forEach((tx: Transaction) => {
