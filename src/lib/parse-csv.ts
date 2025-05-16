@@ -24,8 +24,6 @@ export function parseTransactionData(csvText: string) {
   const descIndex = headers.findIndex(h => h.toLowerCase().includes('description'));
   const amountIndex = headers.findIndex(h => h.toLowerCase().includes('amount'));
   const categoryIndex = headers.findIndex(h => h.toLowerCase().includes('category'));
-  // Keeping reference to typeIndex for future use but prefixing with underscore to indicate it's unused
-  const _typeIndex = headers.findIndex(h => h.toLowerCase().includes('type'));
   
   // Validate that we found all required columns
   if (dateIndex === -1 || descIndex === -1 || amountIndex === -1) {

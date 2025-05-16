@@ -15,7 +15,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold">
           Welcome, Johnson Family
         </h1>
-        <p className="text-muted-foreground mt-1">Here's your financial overview</p>
+        <p className="text-muted-foreground mt-1">Here&apos;s your financial overview</p>
         <PreGenerateButton />
       </div>
       

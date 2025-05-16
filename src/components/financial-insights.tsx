@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,7 +19,9 @@ export function FinancialInsights() {
   const [preComputedInsights, setPreComputedInsights] = useState<Record<string, string>>({});
   const [isPreComputing, setIsPreComputing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const insightTypes = ["snapshot", "detective", "fastfood", "subscriptions"];
+  
+  // Use useMemo to memoize the insightTypes array
+  const insightTypes = useMemo(() => ["snapshot", "detective", "fastfood", "subscriptions"], []);
 
   useEffect(() => {
     if (responseDivRef.current) {
@@ -27,7 +29,8 @@ export function FinancialInsights() {
     }
   }, [response]);
 
-  const regenerateAllInsights = async () => {
+  // Use useCallback to memoize the regenerateAllInsights function
+  const regenerateAllInsights = useCallback(async () => {
     console.log("Regenerating all insights...");
     setIsPreComputing(true);
     setErrorMessage(null);
@@ -188,7 +191,7 @@ export function FinancialInsights() {
     } finally {
       setIsPreComputing(false);
     }
-  };
+  }, [userData]);
 
   // Load pre-computed insights from the server when component mounts
   useEffect(() => {
