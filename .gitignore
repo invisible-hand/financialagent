@@ -37,7 +37,3 @@ next-env.d.ts
 
 # Turbo
 .turbo
-
-# Data directory - exclude the contents but keep the directory
-/data/*
-!/data/.gitkeep
